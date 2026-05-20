@@ -2521,52 +2521,61 @@ index.html
   // ページ読み込み時に実行
   loadVideos();
 </script>
-function doPost(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0];
-  try {
-    var data = JSON.parse(e.postData.contents);
-    sheet.appendRow([new Date(), data.title, data.url]);
-    return ContentService.createTextOutput(JSON.stringify({status: "success"}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({status: "error", error: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .video-card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
+    iframe { width: 100%; height: 200px; }
+  </style>
+</head>
+<body>
+  <h1>動画投稿サイト</h1>
+  <input type="text" id="title" placeholder="動画タイトル">
+  <input type="text" id="url" placeholder="YouTube URL">
+  <button onclick="upload()">公開登録する</button>
+  <div id="videoList"></div>
 
-function doGet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0];
-  var data = sheet.getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify(data.reverse()))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-function doPost(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0]; // 最初のシート
-  
-  try {
-    // 画面から送られてきたデータ（JSON形式）を解析
-    var data = JSON.parse(e.postData.contents);
-    
-    // スプレッドシートに追記 (日付, タイトル, URL)
-    sheet.appendRow([new Date(), data.title, data.url]);
-    
-    return ContentService.createTextOutput(JSON.stringify({status: "success"}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({status: "error", error: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+  <script>
+    // ★ここをデプロイしたURLに書き換えてください
+    const GAS_URL = 'YOUR_GAS_URL_HERE'; 
 
-function doGet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0];
-  var data = sheet.getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify(data.reverse()))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+    // URLから動画IDを抜き出す関数
+    function getEmbedUrl(url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/ ]{11})/);
+      return match ? "https://www.youtube.com/embed/" + match[1] : null;
+    }
+
+    // 投稿処理
+    async function upload() {
+      const title = document.getElementById('title').value;
+      const url = getEmbedUrl(document.getElementById('url').value);
+      if (!url) { alert("正しいYouTube URLを入力してください"); return; }
+
+      await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ title: title, url: url })
+      });
+      alert("公開しました！");
+      loadVideos();
+    }
+
+    // データ読み込み処理
+    async function loadVideos() {
+      const res = await fetch(GAS_URL);
+      const data = await res.json();
+      document.getElementById('videoList').innerHTML = data.map(row => `
+        <div class="video-card">
+          <h3>${row[1]}</h3>
+          <iframe src="${row[2]}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `).join('');
+    }
+
+    loadVideos();
+  </script>
+</body>
+</html>
 </body>
 </html>
