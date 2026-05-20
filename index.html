@@ -2577,5 +2577,57 @@ index.html
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <input type="text" id="title" placeholder="タイトル">
+  <input type="text" id="url" placeholder="YouTube URL">
+  <button id="submitBtn" onclick="uploadData()">公開登録する</button>
+  <div id="videoList"></div>
+
+  <script>
+    const GAS_URL = 'ここにデプロイ後のURLを貼り付け';
+
+    async function uploadData() {
+      const title = document.getElementById('title').value;
+      const url = document.getElementById('url').value;
+      const btn = document.getElementById('submitBtn');
+      
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ title: title, url: url })
+        });
+        
+        if (response.ok) {
+          alert("登録完了！");
+          document.getElementById('title').value = '';
+          document.getElementById('url').value = '';
+          loadData();
+        }
+      } catch (err) {
+        alert("エラーが発生しました: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "公開登録する";
+      }
+    }
+
+    async function loadData() {
+      const res = await fetch(GAS_URL);
+      const data = await res.json();
+      document.getElementById('videoList').innerHTML = data.map(r => `<div>${r[1]}</div>`).join('');
+    }
+    
+    loadData();
+  </script>
+</body>
+</html>
 </body>
 </html>
