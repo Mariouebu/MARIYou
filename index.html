@@ -1,0 +1,2469 @@
+index.html
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube クローン - ビデオプラットフォーム</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        yt: {
+                            black: '#0f0f0f',
+                            darkGray: '#212121',
+                            lightGray: '#f1f1f1',
+                            red: '#ff0000',
+                            hoverDark: '#383838',
+                            hoverLight: '#e5e5e5'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar matching YouTube style */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+        /* Glassmorphism effects */
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-white text-black dark:bg-yt-black dark:text-white font-sans transition-colors duration-200 overflow-x-hidden min-h-screen flex flex-col">
+
+    <header class="sticky top-0 z-50 flex items-center justify-between px-4 py-2 bg-white dark:bg-yt-black border-b border-gray-200 dark:border-gray-800 h-14">
+        <!-- Left Side: Menu Button & Logo -->
+        <div class="flex items-center space-x-4">
+            <button id="sidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-yt-hoverDark rounded-full focus:outline-none hidden md:inline-flex">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <a href="#" onclick="showPage('home')" class="flex items-center space-x-1 select-none">
+                <div class="text-red-600 text-2xl md:text-3xl flex items-center">
+                    <i class="fa-brands fa-youtube"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tighter flex items-center">
+                    Premium<span class="text-xs text-gray-500 font-normal align-super ml-1">JP</span>
+                </span>
+            </a>
+        </div>
+
+        <!-- Middle Side: Search Bar -->
+        <div class="flex-1 max-w-2xl mx-4 sm:mx-8">
+            <form id="searchForm" class="flex items-center w-full">
+                <div class="relative w-full flex items-center">
+                    <input type="text" id="searchInput" placeholder="検索" 
+                           class="w-full px-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-l-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm">
+                    <button type="button" id="clearSearch" class="absolute right-3 hidden text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <button type="submit" class="px-6 py-2 bg-gray-100 dark:bg-zinc-800 border-y border-r border-gray-300 dark:border-zinc-700 rounded-r-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition duration-150">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                </button>
+                <button type="button" id="voiceSearchBtn" class="ml-3 p-3 bg-gray-100 dark:bg-zinc-800 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 hidden md:flex items-center justify-center">
+                    <i class="fa-solid fa-microphone text-sm"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Right Side: User Controls & Theme toggle -->
+        <div class="flex items-center space-x-2 md:space-x-3">
+            <!-- Create Video Button -->
+            <button onclick="showUploadModal()" class="flex items-center space-x-1 p-2 md:px-3 md:py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" title="作成">
+                <i class="fa-solid fa-video text-base"></i>
+                <span class="hidden md:inline">作成</span>
+            </button>
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-base" title="テーマ切り替え">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:inline"></i>
+            </button>
+            <!-- Sync Devices Trigger Button -->
+            <button onclick="showSyncModal()" class="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-base text-blue-500" title="他端末と同期">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <!-- Notifications -->
+            <button class="relative p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-base" title="通知">
+                <i class="fa-regular fa-bell"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full"></span>
+            </button>
+            <!-- User Profile (Mock) -->
+            <div class="relative group cursor-pointer" id="profileDropdownBtn">
+                <img src="https://placehold.co/100x100/dc2626/ffffff?text=U" alt="Profile" class="w-8 h-8 rounded-full border border-gray-300 dark:border-zinc-700">
+                <!-- Dropdown Menu -->
+                <div class="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-xl hidden group-hover:block overflow-hidden py-1 z-50">
+                    <div class="px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
+                        <p class="text-sm font-semibold">デモユーザー</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">user@example.com</p>
+                    </div>
+                    <a href="#" onclick="showPage('library')" class="flex items-center space-x-3 px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800">
+                        <i class="fa-regular fa-folder-open w-5"></i>
+                        <span>ライブラリ</span>
+                    </a>
+                    <a href="#" onclick="showPage('studio')" class="flex items-center space-x-3 px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800">
+                        <i class="fa-solid fa-clapperboard w-5"></i>
+                        <span>クリエイタースタジオ</span>
+                    </a>
+                    <hr class="border-gray-100 dark:border-zinc-800 my-1">
+                    <div class="px-4 py-2 text-xs text-gray-400">
+                        Gemini 3 Flash Built
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-60 bg-white dark:bg-yt-black border-r border-gray-200 dark:border-zinc-800 flex-shrink-0 flex flex-col justify-between hidden md:flex transition-all duration-300">
+            <div class="p-3 space-y-1 overflow-y-auto flex-1">
+                <!-- Primary Navigation Section -->
+                <div class="space-y-1">
+                    <button onclick="showPage('home')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150 bg-gray-100 dark:bg-zinc-800" data-page="home">
+                        <i class="fa-solid fa-house text-lg"></i>
+                        <span>ホーム</span>
+                    </button>
+                    <button onclick="showPage('shorts')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="shorts">
+                        <i class="fa-solid fa-bolt text-lg text-red-500"></i>
+                        <span>Shorts (ショート)</span>
+                    </button>
+                    <button onclick="showPage('subs')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="subs">
+                        <i class="fa-solid fa-clapperboard text-lg"></i>
+                        <span>登録チャンネル</span>
+                    </button>
+                </div>
+                
+                <hr class="border-gray-200 dark:border-zinc-800 my-3">
+                
+                <!-- Personal Section -->
+                <div>
+                    <h3 class="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">あなた</h3>
+                    <button onclick="showPage('library')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="library">
+                        <i class="fa-solid fa-box-archive text-lg"></i>
+                        <span>ライブラリ</span>
+                    </button>
+                    <button onclick="showPage('history')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="history">
+                        <i class="fa-solid fa-history text-lg"></i>
+                        <span>履歴</span>
+                    </button>
+                    <button onclick="showPage('liked')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="liked">
+                        <i class="fa-solid fa-thumbs-up text-lg"></i>
+                        <span>高評価した動画</span>
+                    </button>
+                </div>
+
+                <hr class="border-gray-200 dark:border-zinc-800 my-3">
+
+                <!-- Tools/Settings Section -->
+                <div>
+                    <h3 class="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">クリエイター</h3>
+                    <button onclick="showPage('studio')" class="nav-item flex items-center space-x-4 w-full px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-sm font-medium transition duration-150" data-page="studio">
+                        <i class="fa-solid fa-sliders text-lg"></i>
+                        <span>Creator Studio</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer-like Area inside Sidebar -->
+            <div class="p-4 border-t border-gray-200 dark:border-zinc-800 text-xs text-gray-400">
+                <p class="hover:underline cursor-pointer">規約 & プライバシー</p>
+                <p class="mt-1">© 2026 YouTube Clone</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto min-h-full px-4 md:px-6 py-4" id="contentWindow">
+            
+            <!-- PAGE: HOME -->
+            <section id="page-home" class="space-y-6">
+                <!-- Video Categories Horizontal Chips -->
+                <div class="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-hide no-scrollbar" id="categoriesBar">
+                    <button class="category-chip px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('All')">すべて</button>
+                    <button class="category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('Music')">音楽</button>
+                    <button class="category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('Tech')">ガジェット・技術</button>
+                    <button class="category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('Nature')">自然・旅行</button>
+                    <button class="category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('Space')">宇宙科学</button>
+                    <button class="category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap" onclick="filterByCategory('Education')">教育・解説</button>
+                </div>
+
+                <!-- Feed Title -->
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold tracking-tight" id="feedTitle">おすすめ動画</h2>
+                    <span id="activeFilterBadge" class="hidden px-3 py-1 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-semibold rounded-full"></span>
+                </div>
+
+                <!-- Video Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8" id="videoGrid">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </section>
+
+            <!-- PAGE: WATCH (Video Player Area) -->
+            <section id="page-watch" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Big Block: Video + Details + Comments -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- Responsive Video Container -->
+                        <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+                            <!-- Native Video / Youtube Embed Wrapper -->
+                            <div id="videoContainer" class="w-full h-full animate-fade-in">
+                                <!-- Dynamically replaced with iframe or video tag -->
+                            </div>
+                        </div>
+
+                        <!-- Video Meta & Title -->
+                        <div class="space-y-3" id="watchVideoMetadata">
+                            <h1 id="watchVideoTitle" class="text-xl md:text-2xl font-bold leading-snug">動画のタイトルがここに表示されます</h1>
+                            
+                            <!-- Engagement details + Action Buttons Row -->
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-2 border-b border-gray-100 dark:border-zinc-800 pb-4">
+                                <!-- Left side: Channel Info -->
+                                <div class="flex items-center space-x-3">
+                                    <img id="watchChannelAvatar" src="https://placehold.co/100x100/dc2626/ffffff?text=C" alt="Channel" class="w-10 h-10 rounded-full">
+                                    <div>
+                                        <h3 id="watchChannelName" class="font-bold text-base hover:underline cursor-pointer">チャンネル名</h3>
+                                        <p id="watchChannelSubs" class="text-xs text-gray-500 dark:text-gray-400">登録者数 120万人</p>
+                                    </div>
+                                    <button id="subscribeBtn" onclick="toggleSubscribe()" class="ml-4 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-full transition duration-150 shadow-md">チャンネル登録</button>
+                                </div>
+                                <!-- Right side: Buttons -->
+                                <div class="flex items-center space-x-2 self-start sm:self-auto overflow-x-auto pb-1 max-w-full">
+                                    <!-- Like / Dislike group -->
+                                    <div class="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-full p-0.5">
+                                        <button id="likeBtn" onclick="handleLike()" class="flex items-center space-x-1.5 px-4 py-1.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-l-full text-sm font-semibold transition duration-150">
+                                            <i class="fa-regular fa-thumbs-up text-base"></i>
+                                            <span id="likeCount">1.2万</span>
+                                        </button>
+                                        <div class="h-5 w-px bg-gray-300 dark:bg-zinc-600"></div>
+                                        <button id="dislikeBtn" onclick="handleDislike()" class="px-3 py-1.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-r-full text-sm font-semibold transition duration-150">
+                                            <i class="fa-regular fa-thumbs-down text-base"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Favorite Button -->
+                                    <button onclick="toggleFavorite()" id="favoriteBtn" class="flex items-center space-x-1.5 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-full text-sm font-semibold transition duration-150">
+                                        <i class="fa-regular fa-bookmark"></i>
+                                        <span class="hidden sm:inline">ライブラリ保存</span>
+                                    </button>
+
+                                    <!-- Share Button -->
+                                    <button onclick="shareVideo()" class="flex items-center space-x-1.5 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-full text-sm font-semibold transition duration-150">
+                                        <i class="fa-solid fa-share"></i>
+                                        <span class="hidden sm:inline">共有</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Description Box -->
+                            <div class="p-3 bg-gray-100 dark:bg-zinc-800 rounded-xl hover:bg-gray-200 dark:hover:bg-zinc-800/80 transition duration-150 text-sm">
+                                <div class="flex items-center space-x-3 font-semibold mb-1 text-xs md:text-sm">
+                                    <span id="watchViewCount">再生回数 23万回</span>
+                                    <span id="watchPublishDate">1週間前</span>
+                                    <span id="watchTags" class="text-blue-500 hover:underline cursor-pointer">#Tech #JavaScript</span>
+                                </div>
+                                <p id="watchDescription" class="whitespace-pre-line text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                                    動画の詳しい説明がここに表示されます。折りたたみ表示が可能です。
+                                </p>
+                                <button onclick="toggleDescriptionCollapse()" id="descCollapseBtn" class="mt-2 font-bold hover:underline focus:outline-none text-xs text-black dark:text-white">もっと見る</button>
+                            </div>
+                        </div>
+
+                        <!-- Comments Section Container -->
+                        <div class="space-y-4 pt-4">
+                            <div class="flex items-center space-x-4">
+                                <h2 class="text-lg font-bold"><span id="commentsCountLabel">3</span> コメント</h2>
+                                <button class="flex items-center space-x-1 text-sm font-semibold text-gray-500">
+                                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                                    <span>並べ替え</span>
+                                </button>
+                            </div>
+
+                            <!-- Comment Input Form -->
+                            <div class="flex items-start space-x-3">
+                                <img src="https://placehold.co/100x100/dc2626/ffffff?text=U" alt="Your Avatar" class="w-10 h-10 rounded-full">
+                                <div class="flex-1 space-y-2">
+                                    <input type="text" id="commentInputField" placeholder="コメントを追加..." 
+                                           class="w-full bg-transparent border-b border-gray-300 dark:border-zinc-700 focus:outline-none focus:border-blue-500 py-1 text-sm">
+                                    <div class="flex justify-end space-x-2">
+                                        <button onclick="clearCommentInput()" class="px-4 py-1.5 text-sm font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full">キャンセル</button>
+                                        <button onclick="postComment()" id="submitCommentBtn" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full disabled:opacity-50" disabled>コメント</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- List of Comments -->
+                            <div id="commentsList" class="space-y-4 pt-2">
+                                <!-- Dynamic comments -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Sidebar Recommended Videos -->
+                    <div class="space-y-4">
+                        <h2 class="font-bold text-lg">次の動画</h2>
+                        <div id="recommendedSidebar" class="space-y-4">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: CREATOR STUDIO (Upload list / Video Manager) -->
+            <section id="page-studio" class="hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold">Creator Studio</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">作成した動画の管理、新規アップロードを行います。</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="showSyncModal()" class="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold rounded-lg text-sm flex items-center space-x-2 transition">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                            <span>他端末と同期</span>
+                        </button>
+                        <button onclick="showUploadModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm flex items-center justify-center space-x-2 shadow-lg transition duration-150">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>新規動画を登録</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- クローンスター成長シミュレーター（プロモーション機能） -->
+                <div class="bg-gradient-to-r from-red-600 to-amber-500 p-4 rounded-2xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <h3 class="font-bold text-base flex items-center justify-center sm:justify-start space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
+                            <span>クローンスター成長シミュレーター</span>
+                        </h3>
+                        <p class="text-xs text-red-100 font-medium">マイビデオを宣伝したり、ショートでバズらせて視聴回数や登録者数を実際に獲得して記録できます！</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <button onclick="simulateMarketing('short')" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition flex items-center space-x-1 border border-white/20">
+                            <i class="fa-solid fa-bolt text-yellow-300"></i>
+                            <span>Shortsでバズる (+100人)</span>
+                        </button>
+                        <button onclick="simulateMarketing('sns')" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition flex items-center space-x-1 border border-white/20">
+                            <i class="fa-solid fa-share-nodes text-blue-300"></i>
+                            <span>SNSで拡散 (+2,000回再生)</span>
+                        </button>
+                        <button onclick="simulateMarketing('viral')" class="px-3 py-1.5 bg-white text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition flex items-center space-x-1 shadow-md">
+                            <i class="fa-solid fa-fire text-amber-500"></i>
+                            <span>急上昇に載る (+5万人 / +10万回再生)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Summary Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">総登録ビデオ</p>
+                            <h3 id="studioTotalVideosCount" class="text-2xl font-bold mt-1">0</h3>
+                        </div>
+                        <i class="fa-solid fa-video text-3xl text-zinc-600 dark:text-zinc-400"></i>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">総再生回数 (推定)</p>
+                            <h3 id="studioTotalViewsLabel" class="text-2xl font-bold mt-1">0回</h3>
+                        </div>
+                        <i class="fa-solid fa-chart-line text-3xl text-green-500"></i>
+                    </div>
+                    <div class="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">チャンネル登録者</p>
+                            <h3 id="studioSubscribersLabel" class="text-2xl font-bold mt-1">0人</h3>
+                        </div>
+                        <i class="fa-solid fa-users text-3xl text-blue-500"></i>
+                    </div>
+                </div>
+
+                <!-- Video management Table/List -->
+                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 font-bold text-sm bg-gray-50 dark:bg-zinc-900/50">
+                        登録動画一覧
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 font-medium">
+                                    <th class="p-4">動画</th>
+                                    <th class="p-4">カテゴリー</th>
+                                    <th class="p-4">視聴回数</th>
+                                    <th class="p-4">公開日</th>
+                                    <th class="p-4">評価率</th>
+                                    <th class="p-4 text-center">アクション</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studioVideosTable" class="divide-y divide-gray-100 dark:divide-zinc-800">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: LIBRARY (お気に入り/保存された動画) -->
+            <section id="page-library" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+                    <h1 class="text-2xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-folder-open text-amber-500"></i>
+                        <span>ライブラリ (お気に入り保存)</span>
+                    </h1>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="libraryVideosGrid">
+                    <!-- Library dynamic cards -->
+                </div>
+                <!-- Empty state -->
+                <div id="libraryEmptyState" class="hidden text-center py-20">
+                    <i class="fa-regular fa-bookmark text-6xl text-gray-400 mb-4 block"></i>
+                    <h3 class="text-lg font-bold">保存された動画はありません</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">動画の視聴画面からライブラリに追加してみましょう！</p>
+                </div>
+            </section>
+
+            <!-- PAGE: HISTORY (視聴履歴) -->
+            <section id="page-history" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+                    <h1 class="text-2xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-blue-500"></i>
+                        <span>最近見た動画 (視聴履歴)</span>
+                    </h1>
+                    <button onclick="clearHistory()" class="text-sm text-red-500 hover:text-red-600 font-semibold">履歴をすべて削除</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="historyVideosGrid">
+                    <!-- Dynamic -->
+                </div>
+                <div id="historyEmptyState" class="hidden text-center py-20">
+                    <i class="fa-solid fa-history text-6xl text-gray-400 mb-4 block"></i>
+                    <h3 class="text-lg font-bold">視聴履歴はありません</h3>
+                    <p class="text-sm text-gray-500 mt-1">動画を再生すると履歴に保存されます。</p>
+                </div>
+            </section>
+
+            <!-- PAGE: LIKED (高評価した動画) -->
+            <section id="page-liked" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+                    <h1 class="text-2xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-thumbs-up text-green-500"></i>
+                        <span>高評価した動画</span>
+                    </h1>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="likedVideosGrid">
+                    <!-- Dynamic -->
+                </div>
+                <div id="likedEmptyState" class="hidden text-center py-20">
+                    <i class="fa-regular fa-thumbs-up text-6xl text-gray-400 mb-4 block"></i>
+                    <h3 class="text-lg font-bold">高評価した動画はありません</h3>
+                    <p class="text-sm text-gray-500 mt-1">動画を「いいね！」してリストを作成しましょう。</p>
+                </div>
+            </section>
+
+            <!-- PAGE: SUBSCRIPTIONS (登録チャンネル動画) -->
+            <section id="page-subs" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+                    <h1 class="text-2xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-clapperboard text-red-500"></i>
+                        <span>登録中のチャンネルの最新動画</span>
+                    </h1>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="subsVideosGrid">
+                    <!-- Dynamic -->
+                </div>
+                <div id="subsEmptyState" class="hidden text-center py-20">
+                    <i class="fa-regular fa-circle-play text-6xl text-gray-400 mb-4 block"></i>
+                    <h3 class="text-lg font-bold">登録チャンネルの動画がありません</h3>
+                    <p class="text-sm text-gray-500 mt-1">他のチャンネルを登録して、ここに動画を表示しましょう。</p>
+                </div>
+            </section>
+
+            <!-- PAGE: SHORTS -->
+            <section id="page-shorts" class="hidden max-w-md mx-auto py-4">
+                <div class="bg-black text-white h-[80vh] w-full rounded-2xl relative overflow-hidden flex flex-col shadow-2xl">
+                    <!-- Shorts Player mock -->
+                    <div class="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center">
+                        <video id="shortsVideo" class="w-full h-full object-cover" loop playsinline src="https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4"></video>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                    </div>
+
+                    <!-- Left Overlay Details -->
+                    <div class="absolute bottom-6 left-4 right-16 z-10 text-white space-y-3">
+                        <div class="flex items-center space-x-2">
+                            <img src="https://placehold.co/100x100/dc2626/ffffff?text=S" class="w-9 h-9 rounded-full border border-white">
+                            <span class="font-bold text-sm">@LofiTraveler</span>
+                            <span class="bg-red-600 px-2 py-0.5 text-xs font-semibold rounded-full">登録</span>
+                        </div>
+                        <p class="text-sm leading-snug">静かな森の中の小川で聴くASMR。癒やし100%の極上自然音。🏞️🌲 #Nature #Shorts #Relax</p>
+                    </div>
+
+                    <!-- Right Overlay Controls -->
+                    <div class="absolute right-3 bottom-12 z-10 flex flex-col items-center space-y-5">
+                        <button onclick="toggleShortsLike()" id="shortsLikeBtn" class="flex flex-col items-center text-white">
+                            <div class="w-12 h-12 bg-zinc-900/60 hover:bg-zinc-800 rounded-full flex items-center justify-center text-xl transition">
+                                <i id="shortsLikeIcon" class="fa-solid fa-thumbs-up"></i>
+                            </div>
+                            <span class="text-xs mt-1 font-semibold" id="shortsLikeCount">5,212</span>
+                        </button>
+                        <button class="flex flex-col items-center text-white">
+                            <div class="w-12 h-12 bg-zinc-900/60 hover:bg-zinc-800 rounded-full flex items-center justify-center text-xl transition">
+                                <i class="fa-solid fa-comment-dots"></i>
+                            </div>
+                            <span class="text-xs mt-1 font-semibold">142</span>
+                        </button>
+                        <button class="flex flex-col items-center text-white">
+                            <div class="w-12 h-12 bg-zinc-900/60 hover:bg-zinc-800 rounded-full flex items-center justify-center text-xl transition">
+                                <i class="fa-solid fa-share"></i>
+                            </div>
+                            <span class="text-xs mt-1 font-semibold">共有</span>
+                        </button>
+                    </div>
+
+                    <!-- Click to play/pause icon center -->
+                    <button onclick="togglePlayShorts()" class="absolute inset-0 flex items-center justify-center z-10 text-white opacity-0 hover:opacity-100 transition-opacity">
+                        <i id="shortsPlayIcon" class="fa-solid fa-play text-4xl bg-black/40 p-5 rounded-full"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: Video Upload (Create Video Form) -->
+    <div id="uploadModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeUploadModal()"></div>
+        <!-- Modal Panel -->
+        <div class="relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 w-full max-w-xl mx-4 rounded-2xl shadow-2xl p-6 z-10 overflow-hidden transform transition-all max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+                <h3 class="text-lg font-bold flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-500 animate-bounce"></i>
+                    <span>動画のアップロード / 新規登録</span>
+                </h3>
+                <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Upload Source Mode Tabs -->
+            <div class="flex border-b border-gray-100 dark:border-zinc-800 mt-4">
+                <button onclick="toggleUploadSourceMode('file')" id="sourceTabFile" class="flex-1 py-2 text-sm font-semibold border-b-2 border-blue-500 text-blue-500 focus:outline-none">
+                    <i class="fa-solid fa-file-video mr-2"></i>動画ファイルをアップロード
+                </button>
+                <button onclick="toggleUploadSourceMode('link')" id="sourceTabLink" class="flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-zinc-300 focus:outline-none">
+                    <i class="fa-solid fa-link mr-2"></i>動画リンクを登録 (YouTube/MP4)
+                </button>
+            </div>
+
+            <form id="uploadForm" class="space-y-4 mt-4">
+                <!-- A. LOCAL FILE ZONE -->
+                <div id="localFileZone" class="space-y-3">
+                    <label class="block text-sm font-semibold">動画ファイル</label>
+                    <div id="dropZone" class="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition duration-150">
+                        <i class="fa-solid fa-file-arrow-up text-4xl text-blue-500 mb-2 block"></i>
+                        <p class="text-sm font-medium">ここに動画ファイルをドラッグ＆ドロップ、またはクリックして選択</p>
+                        <p class="text-xs text-gray-400 mt-1">対応フォーマット: MP4, WebM, MOV等 (最大 50MB)</p>
+                        <input type="file" id="uploadFile" accept="video/*" class="hidden">
+                    </div>
+                    <!-- Selected File Info -->
+                    <div id="selectedFileInfo" class="hidden bg-gray-50 dark:bg-zinc-800/40 p-3 rounded-lg flex items-center justify-between border border-gray-200 dark:border-zinc-800">
+                        <div class="flex items-center space-x-2 truncate">
+                            <i class="fa-solid fa-film text-blue-500"></i>
+                            <div class="truncate text-xs">
+                                <p id="selectedFileName" class="font-bold truncate"></p>
+                                <p id="selectedFileSize" class="text-gray-400"></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="removeSelectedFile()" class="text-red-500 hover:text-red-600 text-sm p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- B. LINK URL ZONE (hidden initially) -->
+                <div id="linkUrlZone" class="hidden space-y-2">
+                    <label class="block text-sm font-semibold">動画のURL、またはYouTube動画ID</label>
+                    <input type="text" id="uploadUrl" placeholder="例: https://www.youtube.com/watch?v=dQw4w9WgXcQ  または dQw4w9WgXcQ"
+                           class="w-full px-4 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                    <p class="text-xs text-gray-400">YouTubeの通常の共有リンク、または直リンクの.mp4アドレスに対応しています。</p>
+                </div>
+
+                <!-- Quick Preset Prompts for Links -->
+                <div id="quickPresetsContainer" class="hidden bg-gray-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-gray-200 dark:border-zinc-800 space-y-2">
+                    <p class="text-xs font-bold text-gray-500 flex items-center space-x-1">
+                        <i class="fa-solid fa-sparkles text-amber-500"></i>
+                        <span>すぐに試せるサンプルプリセット</span>
+                    </p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="applyPreset('lofi')" class="px-2.5 py-1 bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-xs rounded-lg transition">ローファイ音楽</button>
+                        <button type="button" onclick="applyPreset('nature')" class="px-2.5 py-1 bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-xs rounded-lg transition">4K神秘の地球</button>
+                        <button type="button" onclick="applyPreset('space')" class="px-2.5 py-1 bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-xs rounded-lg transition">宇宙解説</button>
+                        <button type="button" onclick="applyPreset('tech')" class="px-2.5 py-1 bg-white dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-xs rounded-lg transition">最新AI開発</button>
+                    </div>
+                </div>
+
+                <!-- Metadata Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase">動画タイトル *</label>
+                        <input type="text" id="uploadTitle" required placeholder="タイトルを入力"
+                               class="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase">チャンネル名（投稿者名） *</label>
+                        <input type="text" id="uploadChannel" required value="マイスタジオ" placeholder="投稿者の名前"
+                               class="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase">カテゴリー *</label>
+                        <select id="uploadCategory" required
+                                class="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                            <option value="Music">音楽</option>
+                            <option value="Tech">ガジェット・技術</option>
+                            <option value="Nature">自然・旅行</option>
+                            <option value="Space">宇宙科学</option>
+                            <option value="Education">教育・解説</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase">カスタムサムネイルURL（任意）</label>
+                        <input type="text" id="uploadThumbnail" placeholder="https://... 独自の画像URL（任意）"
+                               class="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Live Auto-Generated Preview Status -->
+                <div id="thumbnailPreviewContainer" class="hidden p-3 bg-gray-50 dark:bg-zinc-800/40 rounded-xl border border-gray-200 dark:border-zinc-800 flex items-center space-x-4">
+                    <img id="liveThumbnailPreview" class="w-28 aspect-video object-cover rounded-lg bg-black" src="">
+                    <div class="text-xs">
+                        <p class="font-bold text-green-500 flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>サムネイルのロード成功</span>
+                        </p>
+                        <p id="thumbnailSourceLabel" class="text-gray-400 mt-0.5">自動取得しました</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-gray-400 uppercase">動画の説明 *</label>
+                    <textarea id="uploadDesc" rows="3" required placeholder="動画に関する詳細な説明を入力してください。"
+                              class="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-blue-500 text-sm"></textarea>
+                </div>
+
+                <!-- Footer buttons inside Form -->
+                <div class="flex justify-end space-x-3 pt-2 border-t border-gray-100 dark:border-zinc-800">
+                    <button type="button" onclick="closeUploadModal()" class="px-5 py-2 text-sm font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl">キャンセル</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-lg transition">公開登録する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Multi-device Synchronization (Account Sync) -->
+    <div id="syncModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSyncModal()"></div>
+        <!-- Modal Panel -->
+        <div class="relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 w-full max-w-md mx-4 rounded-2xl shadow-2xl p-6 z-10 overflow-hidden transform transition-all">
+            <div class="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+                <h3 class="text-lg font-bold flex items-center space-x-2">
+                    <i class="fa-solid fa-arrows-rotate text-blue-500"></i>
+                    <span>マルチデバイス同期設定</span>
+                </h3>
+                <button onclick="closeSyncModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="mt-4 space-y-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    現在の「登録者数」「シミュレーター進行度」「高評価」「ライブラリ」などの個人データを、スマホや別ブラウザなどの異なる端末とリアルタイムに完全同期できます。
+                </p>
+
+                <!-- SECTION 1: Export Key -->
+                <div class="p-3 bg-gray-50 dark:bg-zinc-800/40 border border-gray-200 dark:border-zinc-800 rounded-xl space-y-1.5">
+                    <label class="block text-xs font-bold text-gray-400 uppercase">① この端末の同期キー（コピーして他端末へ）</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="syncKeyDisplay" readonly
+                               class="flex-1 px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-xs font-mono font-semibold text-blue-500 focus:outline-none select-all">
+                        <button onclick="copySyncKey()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition">
+                            コピー
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Import Key -->
+                <div class="p-3 bg-gray-50 dark:bg-zinc-800/40 border border-gray-200 dark:border-zinc-800 rounded-xl space-y-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase">② 他端末のキーをここに入力して同期</label>
+                    <input type="text" id="syncKeyInput" placeholder="ここに同期キー（UserID）を貼り付けてください"
+                           class="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-xs font-mono text-center focus:outline-none focus:border-blue-500">
+                    <button onclick="importSyncKey()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-md">
+                        キーを適用してアカウントを同期する
+                    </button>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button onclick="closeSyncModal()" class="px-4 py-1.5 text-xs font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Video and Canvas element for local video frame capture -->
+    <div class="hidden">
+        <video id="tempVideoElement" muted playsinline></video>
+        <canvas id="tempCanvasElement"></canvas>
+    </div>
+
+    <!-- CUSTOM TOAST/ALERT BOX -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 glass-panel bg-zinc-900/95 text-white border border-zinc-800 px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-24 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-green-500 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">お気に入りに保存しました</span>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION (Matches layout on portable devices) -->
+    <div class="md:hidden sticky bottom-0 z-40 bg-white dark:bg-yt-black border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around py-2">
+        <button onclick="showPage('home')" class="flex flex-col items-center space-y-0.5 text-xs font-semibold text-gray-500 dark:text-gray-400 focus:outline-none hover:text-red-500 transition duration-150">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span>ホーム</span>
+        </button>
+        <button onclick="showPage('shorts')" class="flex flex-col items-center space-y-0.5 text-xs font-semibold text-gray-500 dark:text-gray-400 focus:outline-none hover:text-red-500 transition duration-150">
+            <i class="fa-solid fa-bolt text-lg"></i>
+            <span>Shorts</span>
+        </button>
+        <button onclick="showPage('subs')" class="flex flex-col items-center space-y-0.5 text-xs font-semibold text-gray-500 dark:text-gray-400 focus:outline-none hover:text-red-500 transition duration-150">
+            <i class="fa-solid fa-clapperboard text-lg"></i>
+            <span>登録</span>
+        </button>
+        <button onclick="showPage('library')" class="flex flex-col items-center space-y-0.5 text-xs font-semibold text-gray-500 dark:text-gray-400 focus:outline-none hover:text-red-500 transition duration-150">
+            <i class="fa-solid fa-box-archive text-lg"></i>
+            <span>ライブラリ</span>
+        </button>
+    </div>
+
+    <!-- Firebase System Modules & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'youtube-clone-app';
+        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        const firebaseConfig = rawConfig ? JSON.parse(rawConfig) : {
+            apiKey: "dummy-key-for-local",
+            authDomain: "dummy-domain.firebaseapp.com",
+            projectId: "dummy-project",
+            storageBucket: "dummy-bucket.appspot.com",
+            messagingSenderId: "00000000",
+            appId: "1:000000:web:0000"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- HARDCODED ORIGINAL VIDEOS (FALLBACK / SEED) ---
+        const initialDefaultVideos = [
+            {
+                id: "vid-1",
+                ytId: "jfKfPfyJRdk",
+                isYt: true,
+                title: "深夜の静寂：リラックスできる癒やしのローファイBGM 【勉強用・睡眠用・作業用】",
+                channelName: "Lofi Beats Channel",
+                channelAvatar: "https://placehold.co/100x100/ec4899/ffffff?text=LB",
+                subscribers: "154万人",
+                views: "320万回",
+                viewsCount: 3200000,
+                publishDate: "2週間前",
+                category: "Music",
+                tags: ["#LofiBGM", "#ChillStudy", "#作業用"],
+                likes: "4.5万",
+                likesCount: 45000,
+                thumbnail: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600&auto=format&fit=crop",
+                description: "穏やかな夜、深い勉強や集中をサポートするためにデザインされた特別なローファイプレイリストです。\n勉強や作業のお供に、または快適な睡眠のために是非バックグラウンドでお聞きください。🌱"
+            },
+            {
+                id: "vid-2",
+                ytId: "dQw4w9WgXcQ",
+                isYt: true,
+                title: "名曲アーカイブ：80年代の不朽のダンスポップレジェンド",
+                channelName: "Classic Pop Vibe",
+                channelAvatar: "https://placehold.co/100x100/3b82f6/ffffff?text=CP",
+                subscribers: "892万人",
+                views: "14.5億回",
+                viewsCount: 1450000000,
+                publishDate: "10年前",
+                category: "Music",
+                tags: ["#ClassicHits", "#DancePop", "#Legend"],
+                likes: "1800万",
+                likesCount: 18000000,
+                thumbnail: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop",
+                description: "インターネットの歴史の一部ともなった、色あせない大ヒットビデオ。\nハッピーでダンサブルなビートは今も多くの人々に元気を与えています！"
+            },
+            {
+                id: "vid-3",
+                ytId: "ScMzIvxBSi4",
+                isYt: true,
+                title: "奇跡の絶景：大自然を巡る4K超高画質ドキュメンタリー旅行",
+                channelName: "Earth Wanderer",
+                channelAvatar: "https://placehold.co/100x100/10b981/ffffff?text=EW",
+                subscribers: "45万人",
+                views: "85万回",
+                viewsCount: 850000,
+                publishDate: "3日前",
+                category: "Nature",
+                tags: ["#Nature4K", "#RelaxingEarth", "#旅行"],
+                likes: "2.8万",
+                likesCount: 28000,
+                thumbnail: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600&auto=format&fit=crop",
+                description: "美しき惑星地球。息をのむような山々、深い原生林、クリスタルブルーの海まで、私たちの故郷である素晴らしい大自然を巡る高画質ツアーです。"
+            },
+            {
+                id: "vid-4",
+                ytId: "tntOCGkgt98",
+                isYt: true,
+                title: "宇宙の限界：銀河系と深宇宙の謎を解き明かすビジュアルシミュレーション",
+                channelName: "Space Academy",
+                channelAvatar: "https://placehold.co/100x100/8b5cf6/ffffff?text=SA",
+                subscribers: "210万人",
+                views: "155万回",
+                viewsCount: 1550000,
+                publishDate: "1ヶ月前",
+                category: "Space",
+                tags: ["#DeepSpace", "#Cosmology", "#宇宙"],
+                likes: "9.2万",
+                likesCount: 92000,
+                thumbnail: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop",
+                description: "私たちは宇宙のどこにいるのか？最新のハッブル宇宙望遠鏡およびジェイムズ・ウェッブのデータを基に、銀河の果てまでを見渡す旅に出発しましょう。"
+            },
+            {
+                id: "vid-5",
+                ytId: "L8Sg4F6WizU",
+                isYt: true,
+                title: "【4K】京都の美しい桜と情緒あふれる古い町並み散策 - 癒しの歴史ウォーキングツアー",
+                channelName: "Japan Walker",
+                channelAvatar: "https://placehold.co/100x100/ef4444/ffffff?text=JW",
+                subscribers: "67万人",
+                views: "42.8万回",
+                viewsCount: 428000,
+                publishDate: "3ヶ月前",
+                category: "Nature",
+                tags: ["#Kyoto", "#CherryBlossom", "#JapanTravel"],
+                likes: "1.9万",
+                likesCount: 19000,
+                thumbnail: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=600&auto=format&fit=crop",
+                description: "歴史と自然が息づく京都。満開 of 桜とともに、石畳の小路、伝統的な木造建築、静かな寺院の庭園を巡る、まるでその場にいるかのような散策映像です。"
+            },
+            {
+                id: "vid-6",
+                ytId: "I_r36o6gqW8",
+                isYt: true,
+                title: "初心者向けプログラミング入門：30分でわかるWebアプリ開発の仕組みとJavaScriptの基本",
+                channelName: "Code Academy",
+                channelAvatar: "https://placehold.co/100x100/0ea5e9/ffffff?text=CA",
+                subscribers: "128万人",
+                views: "98.5万回",
+                viewsCount: 985000,
+                publishDate: "2ヶ月前",
+                category: "Education",
+                tags: ["#Programming", "#JavaScript", "#WebDevelopment"],
+                likes: "3.7万",
+                likesCount: 37000,
+                thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=600&auto=format&fit=crop",
+                description: "プログラミングって何から始めればいいの？そんな疑問に答える超入門講座。HTML/CSS、そしてJavaScriptを使ってブラウザ上で簡単なアプリが動く感動を一緒に体験しましょう！"
+            },
+            {
+                id: "vid-7",
+                ytId: "nUvj8LskxCE",
+                isYt: true,
+                title: "【癒やし猫】おもしろ可愛い猫たちのハプニング集！見ているだけで元気になる極上ニャンコ映像 🐾",
+                channelName: "Funny Pets TV",
+                channelAvatar: "https://placehold.co/100x100/f59e0b/ffffff?text=FP",
+                subscribers: "51万人",
+                views: "182万回",
+                viewsCount: 1820000,
+                publishDate: "5日前",
+                category: "Nature",
+                tags: ["#Cats", "#CuteAnimals", "#癒やし"],
+                likes: "7.1万",
+                likesCount: 71000,
+                thumbnail: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=600&auto=format&fit=crop",
+                description: "遊んで、寝て、甘えて、驚いて！おもしろくて愛嬌たっぷりな猫たちの傑作シーンをまとめました。日々の疲れを猫ちゃんたちの無邪気な姿で吹き飛ばしましょう。"
+            },
+            {
+                id: "vid-8",
+                ytId: "Zco_tYt792U",
+                isYt: true,
+                title: "アポロ計画から未来の火星移住まで！人類の壮大な宇宙開発ドキュメンタリー 【特別解説】",
+                channelName: "Space Academy",
+                channelAvatar: "https://placehold.co/100x100/8b5cf6/ffffff?text=SA",
+                subscribers: "210万人",
+                views: "64万回",
+                viewsCount: 640000,
+                publishDate: "10日前",
+                category: "Space",
+                tags: ["#NASA", "#MarsMission", "#Rocket science"],
+                likes: "3.2万",
+                likesCount: 32000,
+                thumbnail: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=600&auto=format&fit=crop",
+                description: "かつて月を目指した人類が、今度は火星を目指しています。過酷な宇宙空間で生きていくための科学技術、新型ロケットの開発など、最前線の宇宙計画をご紹介します。"
+            },
+            {
+                id: "vid-9",
+                ytId: "https://assets.mixkit.co/videos/preview/mixkit-cozy-living-room-in-christmas-eve-42790-large.mp4",
+                isYt: false,
+                title: "暖炉と雪の降る窓辺：極上のリラックス空間をつくる暖炉ASMR 【4K・2時間ループ可能】",
+                channelName: "Ambient Room",
+                channelAvatar: "https://placehold.co/100x100/f59e0b/ffffff?text=AR",
+                subscribers: "12万人",
+                views: "4.2万回",
+                viewsCount: 42000,
+                publishDate: "5日前",
+                category: "Nature",
+                tags: ["#Fireplace", "#ASMR", "#Cozy"],
+                likes: "1,200",
+                likesCount: 1200,
+                thumbnail: "https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop",
+                description: "パチパチと燃える暖炉の音と優しくきらめくイルミネーションが、あなたを心地よいリラックスへと誘います。睡眠や読書に最適です。"
+            }
+        ];
+
+        const DB_NAME = 'YoutubeCloneLocalStore';
+        const STORE_NAME = 'localVideos';
+        
+        let videos = [...initialDefaultVideos];
+        let libraryList = [];
+        let historyList = [];
+        let likedList = [];
+        let subscribedChannels = [];
+        let commentsList = [];
+        
+        let mySubscribers = 0;
+        let myChannelViewsBonus = 0;
+
+        let currentPage = 'home';
+        let currentActiveVideo = null;
+        let activeCategory = 'All';
+
+        let userId = null;
+        let dbUserRef = null;
+        let unsubscribeUserSync = null;
+
+        let currentUploadSourceType = 'file'; // 'file' or 'link'
+        let currentSelectedFile = null;
+        let generatedThumbnailBase64 = null;
+
+        // Open/Initialize IndexedDB for heavy file persistence
+        function openLocalDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function saveLocalVideoFile(id, fileBlob) {
+            const db = await openLocalDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put({ id, blob: fileBlob });
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getLocalVideoFile(id) {
+            const db = await openLocalDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result ? request.result.blob : null);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function deleteLocalVideoFile(id) {
+            const db = await openLocalDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // --- PRESETS FOR QUICK INPUT ---
+        const presets = {
+            lofi: {
+                title: "【作業用BGM】真夜中の読書と温かいココア / Chill Lofi Beats to study/relax ☕",
+                category: "Music",
+                channel: "Lo-Fi Cafe BGM",
+                url: "jfKfPfyJRdk",
+                desc: "今夜も一日お疲れ様でした。心温まるビートとともに、ゆったりとしたリラックスタイムをお過ごしください。勉強、読書、睡眠用のバックグラウンドに最適です。\n\n#LofiBGM #ChillBeats #作業用BGM"
+            },
+            nature: {
+                title: "【4K超高画質】まるで別世界！地球上で最も美しい神秘的な絶景ドキュメンタリー 🌏🌿",
+                category: "Nature",
+                channel: "Earth Discoverer",
+                url: "ScMzIvxBSi4",
+                desc: "美しき私たちの星「地球」に広がる、息をのむような神秘の絶景を4Kの圧倒的な映像美でお届けします。お部屋のインテリア、リフレッシュタイム、瞑想の際にご活用ください。\n\n#Nature4K #絶景 #RelaxingVisuals"
+            },
+            space: {
+                title: "【ジェイムズ・ウェッブ最新データ】宇宙の果てはどうなっているのか？超空間ビジュアル解説 🔭🌌",
+                category: "Space",
+                channel: "Cosmo Science",
+                url: "tntOCGkgt98",
+                desc: "最新の宇宙望遠鏡が観測したデータから浮かび上がる、銀河誕生の秘密とブラックホールの真実。宇宙物理学の視点からわかりやすくCGを交えてお届けします。\n\n#宇宙科学 #DeepSpace #宇宙ドキュメンタリー"
+            },
+            tech: {
+                title: "【爆速開発】2026年最新AI開発ツールを完全使いこなし！未来のプログラミングを体験しよう 💡🚀",
+                category: "Tech",
+                channel: "NextGen Coder",
+                url: "dQw4w9WgXcQ",
+                desc: "最新のAI開発エージェントを組み合わせることで、一人でも数分で高度なアプリケーションを構築するスキルを伝授します。次世代開発の最前線へようこそ。\n\n#最新技術 #AI開発 #TechReview"
+            }
+        };
+
+        window.applyPreset = function(type) {
+            const data = presets[type];
+            if (!data) return;
+
+            document.getElementById('uploadTitle').value = data.title;
+            document.getElementById('uploadCategory').value = data.category;
+            document.getElementById('uploadChannel').value = data.channel;
+            document.getElementById('uploadUrl').value = data.url;
+            document.getElementById('uploadDesc').value = data.desc;
+
+            updateLivePreview(data.url);
+            showToast("サンプル動画の情報を入力しました！");
+        };
+
+        function updateLivePreview(urlInput) {
+            const ytId = extractYouTubeId(urlInput) || urlInput;
+            const previewContainer = document.getElementById('thumbnailPreviewContainer');
+            const previewImg = document.getElementById('liveThumbnailPreview');
+            const sourceLabel = document.getElementById('thumbnailSourceLabel');
+
+            if (ytId && ytId.length === 11) {
+                const thumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                previewImg.src = thumbUrl;
+                previewContainer.classList.remove('hidden');
+                sourceLabel.innerText = "YouTubeからサムネイルを自動取得しました";
+                generatedThumbnailBase64 = thumbUrl;
+            } else if (urlInput.startsWith('http')) {
+                previewImg.src = 'https://placehold.co/600x400/212121/ffffff?text=Direct+Video+Stream';
+                previewContainer.classList.remove('hidden');
+                sourceLabel.innerText = "直接動画配信アドレスを検出しました";
+                generatedThumbnailBase64 = 'https://placehold.co/600x400/212121/ffffff?text=Direct+Video';
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // Firestore Paths
+        const getPublicVideosCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'videos');
+        const getPublicCommentsCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'comments');
+        const getUserStateDoc = (uid) => doc(db, 'artifacts', appId, 'users', uid, 'userData', 'userState');
+
+        // --- AUTHENTICATION INIT ---
+        async function authenticate() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Authentication failed. Retrying anonymously...", e);
+                try {
+                    await signInAnonymously(auth);
+                } catch (err) {
+                    console.error("Fallback anonymous auth failed:", err);
+                }
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const savedCustomKey = localStorage.getItem('youtube_clone_custom_sync_key');
+                userId = savedCustomKey ? savedCustomKey : user.uid;
+                
+                const dropdownInfo = document.querySelector('#profileDropdownBtn + div div p:last-child');
+                if (dropdownInfo) dropdownInfo.innerText = `ID: ${userId}`;
+
+                const keyDisplay = document.getElementById('syncKeyDisplay');
+                if (keyDisplay) keyDisplay.value = userId;
+
+                dbUserRef = getUserStateDoc(userId);
+                
+                setupUserStateSync();
+                setupPublicVideosSync();
+                setupPublicCommentsSync();
+            }
+        });
+
+        function setupUserStateSync() {
+            if (!userId) return;
+            
+            if (unsubscribeUserSync) {
+                unsubscribeUserSync();
+            }
+
+            unsubscribeUserSync = onSnapshot(dbUserRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    libraryList = data.libraryList || [];
+                    historyList = data.historyList || [];
+                    likedList = data.likedList || [];
+                    subscribedChannels = data.subscribedChannels || [];
+                    mySubscribers = data.mySubscribers || 0;
+                    myChannelViewsBonus = data.myChannelViewsBonus || 0;
+                } else {
+                    setDoc(dbUserRef, {
+                        libraryList: [],
+                        historyList: [],
+                        likedList: [],
+                        subscribedChannels: [],
+                        mySubscribers: 0,
+                        myChannelViewsBonus: 0
+                    });
+                }
+                refreshActiveView();
+            }, (err) => {
+                console.error("Error syncing user private state:", err);
+            });
+        }
+
+        // --- DEVICE SYNC MODAL CONTROLS ---
+        window.showSyncModal = function() {
+            document.getElementById('syncKeyDisplay').value = userId || "未接続";
+            document.getElementById('syncModal').classList.remove('hidden');
+        };
+
+        window.closeSyncModal = function() {
+            document.getElementById('syncModal').classList.add('hidden');
+            document.getElementById('syncKeyInput').value = '';
+        };
+
+        window.copySyncKey = function() {
+            const keyInput = document.getElementById('syncKeyDisplay');
+            keyInput.select();
+            document.execCommand('copy');
+            showToast("同期キーをクリップボードにコピーしました！", "fa-copy");
+        };
+
+        window.importSyncKey = async function() {
+            const inputVal = document.getElementById('syncKeyInput').value.trim();
+            if (!inputVal) {
+                showToast("有効な同期キーを入力してください", "fa-triangle-exclamation", true);
+                return;
+            }
+
+            if (inputVal === userId) {
+                showToast("現在すでにこのキーで同期しています", "fa-triangle-exclamation", true);
+                return;
+            }
+
+            const confirmBox = document.createElement('div');
+            confirmBox.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm";
+            confirmBox.innerHTML = `
+                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-6 rounded-2xl w-full max-w-sm mx-4 space-y-4 shadow-2xl">
+                    <h3 class="font-bold text-lg text-amber-500 flex items-center space-x-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>同期キーの適用</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">
+                        アカウントを同期キー <strong>${inputVal.substring(0, 8)}...</strong> の持ち主へ切り替えます。よろしいですか？<br>
+                        <span class="text-xs text-red-500">※現在の端末に一時的に保存されているお気に入りや進行度は上書きされます。</span>
+                    </p>
+                    <div class="flex justify-end space-x-3">
+                        <button id="cancelSyncBtn" class="px-4 py-2 text-sm font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl">キャンセル</button>
+                        <button id="confirmSyncBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md">同期を上書き適用</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('cancelSyncBtn').onclick = () => confirmBox.remove();
+            document.getElementById('confirmSyncBtn').onclick = async () => {
+                confirmBox.remove();
+                try {
+                    userId = inputVal;
+                    localStorage.setItem('youtube_clone_custom_sync_key', userId);
+                    dbUserRef = getUserStateDoc(userId);
+                    
+                    const dropdownInfo = document.querySelector('#profileDropdownBtn + div div p:last-child');
+                    if (dropdownInfo) dropdownInfo.innerText = `ID: ${userId}`;
+                    document.getElementById('syncKeyDisplay').value = userId;
+
+                    setupUserStateSync();
+                    closeSyncModal();
+                    showToast("他端末のアカウントとの同期が成功しました！", "fa-arrows-rotate");
+                    showPage('studio');
+                } catch (err) {
+                    console.error("Sync Key import failed:", err);
+                    showToast("キーの読み込みに失敗しました", "fa-triangle-exclamation", true);
+                }
+            };
+        };
+
+        function setupPublicVideosSync() {
+            const q = getPublicVideosCollection();
+            onSnapshot(q, (querySnapshot) => {
+                const cloudVideos = [];
+                querySnapshot.forEach((doc) => {
+                    cloudVideos.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                videos = [...initialDefaultVideos, ...cloudVideos];
+                refreshActiveView();
+            }, (err) => {
+                console.error("Error syncing public videos:", err);
+            });
+        }
+
+        function setupPublicCommentsSync() {
+            const q = getPublicCommentsCollection();
+            onSnapshot(q, (querySnapshot) => {
+                const comments = [];
+                querySnapshot.forEach((doc) => {
+                    comments.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                commentsList = comments;
+                
+                if (currentPage === 'watch' && currentActiveVideo) {
+                    loadCommentsForVideo(currentActiveVideo.id);
+                }
+            }, (err) => {
+                console.error("Error syncing public comments:", err);
+            });
+        }
+
+        async function saveUserStateToCloud() {
+            if (!userId || !dbUserRef) return;
+            try {
+                await setDoc(dbUserRef, {
+                    libraryList,
+                    historyList,
+                    likedList,
+                    subscribedChannels,
+                    mySubscribers,
+                    myChannelViewsBonus
+                }, { merge: true });
+            } catch (err) {
+                console.error("Failed saving user data to Cloud storage:", err);
+            }
+        }
+
+        function formatViews(count) {
+            if (!count || count === 0) return "0回";
+            if (count >= 100000000) return `${(count / 100000000).toFixed(1)}億回`;
+            if (count >= 10000) return `${(count / 10000).toFixed(1)}万回`;
+            return `${count}回`;
+        }
+
+        function formatSubscribers(count) {
+            if (!count || count === 0) return "0人";
+            if (count >= 10000) return `${(count / 10000).toFixed(1)}万人`;
+            return `${count}人`;
+        }
+
+        function refreshActiveView() {
+            if (currentPage === 'home') {
+                filterByCategory(activeCategory);
+            } else if (currentPage === 'library') {
+                renderLibrary();
+            } else if (currentPage === 'history') {
+                renderHistory();
+            } else if (currentPage === 'liked') {
+                renderLiked();
+            } else if (currentPage === 'subs') {
+                renderSubscriptionsVideos();
+            } else if (currentPage === 'studio') {
+                renderStudioManager();
+            }
+        }
+
+        function showPage(pageId) {
+            currentPage = pageId;
+            
+            const pages = ['home', 'watch', 'studio', 'library', 'history', 'liked', 'subs', 'shorts'];
+            pages.forEach(p => {
+                const pageEl = document.getElementById(`page-${p}`);
+                if (pageEl) pageEl.classList.add('hidden');
+            });
+
+            const activePage = document.getElementById(`page-${pageId}`);
+            if (activePage) activePage.classList.remove('hidden');
+
+            if (pageId !== 'watch') {
+                const videoContainer = document.getElementById('videoContainer');
+                if (videoContainer) videoContainer.innerHTML = '';
+                currentActiveVideo = null;
+            }
+            if (pageId !== 'shorts') {
+                const shortsVid = document.getElementById('shortsVideo');
+                if (shortsVid) shortsVid.pause();
+            } else {
+                setTimeout(() => {
+                    const shortsVid = document.getElementById('shortsVideo');
+                    if (shortsVid) {
+                        shortsVid.currentTime = 0;
+                        shortsVid.play().catch(e => console.log("Shorts auto-play issue:", e));
+                    }
+                }, 100);
+            }
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const attr = item.getAttribute('data-page');
+                if (attr === pageId) {
+                    item.classList.add('bg-gray-100', 'dark:bg-zinc-800');
+                } else {
+                    item.classList.remove('bg-gray-100', 'dark:bg-zinc-800');
+                }
+            });
+
+            refreshActiveView();
+            document.getElementById('contentWindow').scrollTop = 0;
+        }
+
+        function generateVideoCardHTML(v) {
+            let thumbUrl = v.thumbnail;
+            if (v.isYt && !thumbUrl) {
+                thumbUrl = `https://img.youtube.com/vi/${v.ytId}/hqdefault.jpg`;
+            }
+
+            return `
+                <div class="group flex flex-col space-y-2 cursor-pointer transition-all duration-300 animate-fade-in" onclick="handleVideoCardClick('${v.id}')">
+                    <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-zinc-800">
+                        <img src="${thumbUrl}" alt="thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" onerror="this.onerror=null; this.src='https://placehold.co/600x400/212121/ffffff?text=Video+Player'">
+                        <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-white text-xs font-semibold rounded">
+                            ${v.isYt ? '<i class="fa-brands fa-youtube text-red-500 text-xs mr-1"></i>YT' : (v.id.startsWith('local-') ? '<i class="fa-solid fa-file-video text-blue-400 text-xs mr-1"></i>LOCAL' : 'MP4')}
+                        </span>
+                        <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-200">
+                            <span class="p-3 bg-red-600/95 text-white rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition duration-200">
+                                <i class="fa-solid fa-play text-sm"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3.5 px-1">
+                        <img src="${v.channelAvatar || 'https://placehold.co/100x100/dc2626/ffffff?text=C'}" alt="avatar" class="w-9 h-9 rounded-full flex-shrink-0">
+                        <div class="space-y-1 overflow-hidden flex-1">
+                            <h3 class="font-semibold text-sm leading-tight text-gray-900 dark:text-zinc-50 line-clamp-2" title="${v.title}">
+                                ${v.title}
+                            </h3>
+                            <div class="text-xs text-gray-500 dark:text-zinc-400">
+                                <p class="hover:underline hover:text-gray-800 dark:hover:text-white">${v.channelName}</p>
+                                <div class="flex items-center space-x-1 flex-wrap mt-0.5">
+                                    <span>${v.views}</span>
+                                    <span>•</span>
+                                    <span>${v.publishDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHomeGrid(filteredVideos = videos) {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '';
+            
+            if (filteredVideos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-20 text-gray-500">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i>
+                        <p class="text-lg font-bold">動画が見つかりませんでした</p>
+                        <p class="text-xs mt-1">別のキーワードで検索するか、カテゴリーを変更してください。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredVideos.forEach(v => {
+                grid.innerHTML += generateVideoCardHTML(v);
+            });
+        }
+
+        function filterByCategory(category) {
+            activeCategory = category;
+            
+            const chips = document.querySelectorAll('.category-chip');
+            chips.forEach(chip => {
+                if (chip.innerText.includes(category) || (category === 'All' && chip.innerText === 'すべて')) {
+                    chip.className = "category-chip px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded-lg text-sm font-medium whitespace-nowrap";
+                } else {
+                    chip.className = "category-chip px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium whitespace-nowrap";
+                }
+            });
+
+            const titleEl = document.getElementById('feedTitle');
+            const badge = document.getElementById('activeFilterBadge');
+            
+            if (category === 'All') {
+                titleEl.innerText = "おすすめ動画";
+                badge.classList.add('hidden');
+                renderHomeGrid(videos);
+            } else {
+                titleEl.innerText = `${category} の関連動画`;
+                badge.innerText = category;
+                badge.classList.remove('hidden');
+                
+                const filtered = videos.filter(v => v.category === category);
+                renderHomeGrid(filtered);
+            }
+        }
+
+        function executeSearch(queryText) {
+            if (!queryText.trim()) {
+                renderHomeGrid(videos);
+                document.getElementById('feedTitle').innerText = "おすすめ動画";
+                document.getElementById('clearSearch').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('clearSearch').classList.remove('hidden');
+            const keywords = queryText.toLowerCase().split(/\s+/);
+            
+            const results = videos.filter(v => {
+                const combined = `${v.title} ${v.channelName} ${v.description} ${v.category} ${(v.tags || []).join(' ')}`.toLowerCase();
+                return keywords.every(kw => combined.includes(kw));
+            });
+
+            showPage('home');
+            renderHomeGrid(results);
+            document.getElementById('feedTitle').innerText = `「${queryText}」の検索結果 (${results.length}件)`;
+        }
+
+        function handleVideoCardClick(id) {
+            const vid = videos.find(v => v.id === id);
+            if (vid) {
+                playVideo(vid);
+            }
+        }
+
+        async function playVideo(videoObj) {
+            currentActiveVideo = videoObj;
+            showPage('watch');
+
+            document.getElementById('watchVideoTitle').innerText = videoObj.title;
+            document.getElementById('watchChannelName').innerText = videoObj.channelName;
+            document.getElementById('watchChannelAvatar').src = videoObj.channelAvatar || 'https://placehold.co/100x100/dc2626/ffffff?text=C';
+            document.getElementById('watchViewCount').innerText = `再生回数 ${videoObj.views}`;
+            document.getElementById('watchPublishDate').innerText = videoObj.publishDate;
+            document.getElementById('watchDescription').innerText = videoObj.description;
+            document.getElementById('likeCount').innerText = videoObj.likes || "0";
+            document.getElementById('watchTags').innerText = (videoObj.tags && videoObj.tags.length > 0) ? videoObj.tags.join(' ') : '#Video';
+
+            const subBtn = document.getElementById('subscribeBtn');
+            if (subscribedChannels.includes(videoObj.channelName)) {
+                subBtn.innerText = "登録中";
+                subBtn.className = "ml-4 px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-black dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white font-semibold text-sm rounded-full transition duration-150";
+            } else {
+                subBtn.innerText = "チャンネル登録";
+                subBtn.className = "ml-4 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-full transition duration-150 shadow-md";
+            }
+
+            const likeIcon = document.querySelector('#likeBtn i');
+            if (likedList.includes(videoObj.id)) {
+                likeIcon.className = "fa-solid fa-thumbs-up text-blue-500 text-base animate-pulse";
+            } else {
+                likeIcon.className = "fa-regular fa-thumbs-up text-base";
+            }
+
+            const favBtn = document.getElementById('favoriteBtn');
+            const favIcon = favBtn.querySelector('i');
+            if (libraryList.includes(videoObj.id)) {
+                favIcon.className = "fa-solid fa-bookmark text-yellow-500";
+            } else {
+                favIcon.className = "fa-regular fa-bookmark";
+            }
+
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = '';
+
+            // CASE 1: Local Offline Persistent Video file (via IndexedDB)
+            if (videoObj.id.startsWith('local-')) {
+                container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white space-y-2"><i class="fa-solid fa-circle-notch animate-spin text-3xl text-blue-500"></i><p class="text-xs">ローカル動画を準備中...</p></div>`;
+                
+                try {
+                    const videoBlob = await getLocalVideoFile(videoObj.id);
+                    if (videoBlob) {
+                        const blobUrl = URL.createObjectURL(videoBlob);
+                        container.innerHTML = `
+                            <video class="w-full h-full rounded-2xl" controls autoplay>
+                                <source src="${blobUrl}" type="${videoBlob.type}">
+                                お使いのブラウザはビデオ再生に対応していません。
+                            </video>
+                        `;
+                    } else {
+                        container.innerHTML = `
+                            <video class="w-full h-full rounded-2xl" controls autoplay loop>
+                                <source src="${videoObj.ytId}" type="video/mp4">
+                                お使いのブラウザはビデオ再生に対応していません。
+                            </video>
+                        `;
+                    }
+                } catch (err) {
+                    console.error("Failed to load IndexedDB video:", err);
+                    container.innerHTML = `<p class="text-sm text-red-500 p-6">動画のロードに失敗しました</p>`;
+                }
+
+            // CASE 2: YouTube embed
+            } else if (videoObj.isYt) {
+                container.innerHTML = `
+                    <iframe class="w-full h-full border-0 rounded-2xl" 
+                            src="https://www.youtube.com/embed/${videoObj.ytId}?autoplay=1&enablejsapi=1&rel=0" 
+                            title="YouTube video player" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                    </iframe>
+                `;
+
+            // CASE 3: Direct web MP4 streaming link
+            } else {
+                container.innerHTML = `
+                    <video class="w-full h-full rounded-2xl" controls autoplay>
+                        <source src="${videoObj.ytId}" type="video/mp4">
+                        お使いのブラウザはビデオ再生に対応していません。
+                    </video>
+                `;
+            }
+
+            if (!videoObj.id.startsWith('vid-')) {
+                const videoDocRef = doc(getPublicVideosCollection(), videoObj.id);
+                const currentViewsCount = videoObj.viewsCount || 0;
+                const nextViewsCount = currentViewsCount + 1;
+                
+                try {
+                    await updateDoc(videoDocRef, {
+                        viewsCount: nextViewsCount,
+                        views: formatViews(nextViewsCount)
+                    });
+                    videoObj.viewsCount = nextViewsCount;
+                    videoObj.views = formatViews(nextViewsCount);
+                } catch (err) {
+                    console.debug("再生数のリアルタイム更新がスキップされました", err);
+                }
+            }
+
+            addToHistory(videoObj.id);
+            loadCommentsForVideo(videoObj.id);
+            loadRecommendedSidebar(videoObj.id);
+        }
+
+        function loadCommentsForVideo(vidId) {
+            const listContainer = document.getElementById('commentsList');
+            listContainer.innerHTML = '';
+
+            const matchedComments = commentsList
+                .filter(c => c.videoId === vidId)
+                .sort((a, b) => b.createdAt - a.createdAt);
+
+            if (matchedComments.length === 0) {
+                matchedComments.push({
+                    id: "default-info",
+                    author: "システム解説員",
+                    text: "クラウド上の共有掲示板です！お気軽にコメントを投稿してください。他のユーザーの画面にもリアルタイムに反映されます。",
+                    time: "1分前",
+                    avatar: "https://placehold.co/100x100/10b981/ffffff?text=シ"
+                });
+            }
+
+            document.getElementById('commentsCountLabel').innerText = matchedComments.length;
+
+            matchedComments.forEach(cmt => {
+                listContainer.innerHTML += `
+                    <div class="flex space-x-3.5 group animate-fade-in">
+                        <img src="${cmt.avatar}" alt="user" class="w-9 h-9 rounded-full mt-1">
+                        <div class="flex-1 space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-sm text-gray-900 dark:text-zinc-100">${cmt.author}</span>
+                                <span class="text-xs text-gray-500 dark:text-zinc-400">${cmt.time}</span>
+                            </div>
+                            <p class="text-sm text-gray-700 dark:text-zinc-300 leading-relaxed">${cmt.text}</p>
+                            <div class="flex items-center space-x-3 pt-1 text-xs text-gray-500">
+                                <button class="hover:text-black dark:hover:text-white flex items-center space-x-1">
+                                    <i class="fa-regular fa-thumbs-up"></i>
+                                    <span>${cmt.id === "default-info" ? '12' : '0'}</span>
+                                </button>
+                                <button class="hover:text-black dark:hover:text-white flex items-center space-x-1">
+                                    <i class="fa-regular fa-thumbs-down"></i>
+                                </button>
+                                ${cmt.ownerId === userId ? `
+                                    <button onclick="deleteCloudComment('${cmt.id}')" class="text-red-500 hover:underline">削除</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function postComment() {
+            if (!currentActiveVideo || !userId) return;
+            const input = document.getElementById('commentInputField');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const newCmt = {
+                videoId: currentActiveVideo.id,
+                author: `デモユーザー (${userId.substring(0, 5)})`,
+                text: text,
+                time: "たった今",
+                avatar: "https://placehold.co/100x100/dc2626/ffffff?text=U",
+                createdAt: Date.now(),
+                ownerId: userId
+            };
+
+            try {
+                await addDoc(getPublicCommentsCollection(), newCmt);
+                input.value = '';
+                document.getElementById('submitCommentBtn').disabled = true;
+                showToast("クラウドにコメントを保存しました！");
+            } catch (err) {
+                console.error("Failed adding comment to database:", err);
+                showToast("コメントの保存に失敗しました", "fa-triangle-exclamation", true);
+            }
+        }
+
+        window.deleteCloudComment = async function(cmtId) {
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'comments', cmtId));
+                showToast("コメントを削除しました");
+            } catch (err) {
+                console.error("Failed deleting comment:", err);
+                showToast("削除権限がないかエラーが発生しました", "fa-triangle-exclamation", true);
+            }
+        };
+
+        function clearCommentInput() {
+            document.getElementById('commentInputField').value = '';
+            document.getElementById('submitCommentBtn').disabled = true;
+        }
+
+        function toggleDescriptionCollapse() {
+            const desc = document.getElementById('watchDescription');
+            const btn = document.getElementById('descCollapseBtn');
+            if (desc.classList.contains('line-clamp-2')) {
+                desc.classList.remove('line-clamp-2');
+                btn.innerText = "折りたたむ";
+            } else {
+                desc.classList.add('line-clamp-2');
+                btn.innerText = "もっと見る";
+            }
+        }
+
+        function loadRecommendedSidebar(currentVidId) {
+            const sidebar = document.getElementById('recommendedSidebar');
+            sidebar.innerHTML = '';
+
+            const recommendations = videos.filter(v => v.id !== currentVidId);
+            recommendations.forEach(v => {
+                let thumbUrl = v.thumbnail;
+                if (v.isYt && !thumbUrl) {
+                    thumbUrl = `https://img.youtube.com/vi/${v.ytId}/hqdefault.jpg`;
+                }
+
+                sidebar.innerHTML += `
+                    <div onclick="handleVideoCardClick('${v.id}')" class="flex space-x-3 cursor-pointer group hover:bg-gray-50 dark:hover:bg-zinc-800 p-1.5 rounded-xl transition duration-150">
+                        <div class="relative w-36 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800">
+                            <img src="${thumbUrl}" alt="thumbnail" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <h4 class="font-bold text-xs md:text-sm line-clamp-2 text-gray-900 dark:text-zinc-100 group-hover:text-red-500 transition duration-100">
+                                ${v.title}
+                            </h4>
+                            <div class="text-[11px] text-gray-500 dark:text-zinc-400">
+                                <p class="truncate font-medium">${v.channelName}</p>
+                                <p>${v.views} • ${v.publishDate}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addToHistory(vidId) {
+            historyList = historyList.filter(id => id !== vidId);
+            historyList.unshift(vidId);
+            if (historyList.length > 20) historyList.pop();
+            saveUserStateToCloud();
+        }
+
+        function clearHistory() {
+            historyList = [];
+            saveUserStateToCloud();
+            showToast("再生履歴を全削除しました");
+        }
+
+        function handleLike() {
+            if (!currentActiveVideo) return;
+            const vidId = currentActiveVideo.id;
+            const idx = likedList.indexOf(vidId);
+            const likeIcon = document.querySelector('#likeBtn i');
+
+            if (idx === -1) {
+                likedList.push(vidId);
+                showToast("高評価に保存しました（クラウド保存完了）", "fa-thumbs-up");
+                likeIcon.className = "fa-solid fa-thumbs-up text-blue-500 text-base animate-bounce";
+            } else {
+                likedList.splice(idx, 1);
+                showToast("高評価を解除しました", "fa-thumbs-up");
+                likeIcon.className = "fa-regular fa-thumbs-up text-base";
+            }
+            saveUserStateToCloud();
+        }
+
+        function handleDislike() {
+            showToast("フィードバックを記録しました", "fa-thumbs-down");
+        }
+
+        function toggleFavorite() {
+            if (!currentActiveVideo) return;
+            const vidId = currentActiveVideo.id;
+            const idx = libraryList.indexOf(vidId);
+            const favIcon = document.querySelector('#favoriteBtn i');
+
+            if (idx === -1) {
+                libraryList.push(vidId);
+                showToast("ライブラリにクラウド保存しました！", "fa-bookmark");
+                favIcon.className = "fa-solid fa-bookmark text-yellow-500";
+            } else {
+                libraryList.splice(idx, 1);
+                showToast("ライブラリから削除しました", "fa-bookmark");
+                favIcon.className = "fa-regular fa-bookmark";
+            }
+            saveUserStateToCloud();
+        }
+
+        function toggleSubscribe() {
+            if (!currentActiveVideo) return;
+            const channel = currentActiveVideo.channelName;
+            const idx = subscribedChannels.indexOf(channel);
+            const btn = document.getElementById('subscribeBtn');
+
+            if (idx === -1) {
+                subscribedChannels.push(channel);
+                btn.innerText = "登録中";
+                btn.className = "ml-4 px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-black dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white font-semibold text-sm rounded-full transition duration-150";
+                showToast(`${channel} を登録しました`, "fa-circle-check");
+            } else {
+                subscribedChannels.splice(idx, 1);
+                btn.innerText = "チャンネル登録";
+                btn.className = "ml-4 px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-full transition duration-150 shadow-md";
+                showToast(`${channel} の登録を解除しました`, "fa-circle-xmark");
+            }
+            saveUserStateToCloud();
+        }
+
+        function shareVideo() {
+            if (!currentActiveVideo) return;
+            const dummyUrl = `${window.location.origin}${window.location.pathname}?v=${currentActiveVideo.id}`;
+            const textarea = document.createElement('textarea');
+            textarea.value = dummyUrl;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("共有リンクをコピーしました！", "fa-share-nodes");
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('libraryVideosGrid');
+            const emptyState = document.getElementById('libraryEmptyState');
+            grid.innerHTML = '';
+
+            const libVideos = videos.filter(v => libraryList.includes(v.id));
+
+            if (libVideos.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                libVideos.forEach(v => {
+                    grid.innerHTML += generateVideoCardHTML(v);
+                });
+            }
+        }
+
+        function renderHistory() {
+            const grid = document.getElementById('historyVideosGrid');
+            const emptyState = document.getElementById('historyEmptyState');
+            grid.innerHTML = '';
+
+            const histVideos = historyList.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+            if (histVideos.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                histVideos.forEach(v => {
+                    grid.innerHTML += generateVideoCardHTML(v);
+                });
+            }
+        }
+
+        function renderLiked() {
+            const grid = document.getElementById('likedVideosGrid');
+            const emptyState = document.getElementById('likedEmptyState');
+            grid.innerHTML = '';
+
+            const likedVideos = videos.filter(v => likedList.includes(v.id));
+
+            if (likedVideos.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                likedVideos.forEach(v => {
+                    grid.innerHTML += generateVideoCardHTML(v);
+                });
+            }
+        }
+
+        function renderSubscriptionsVideos() {
+            const grid = document.getElementById('subsVideosGrid');
+            const emptyState = document.getElementById('subsEmptyState');
+            grid.innerHTML = '';
+
+            const subsVideos = videos.filter(v => subscribedChannels.includes(v.channelName));
+
+            if (subsVideos.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                subsVideos.forEach(v => {
+                    grid.innerHTML += generateVideoCardHTML(v);
+                });
+            }
+        }
+
+        function renderStudioManager() {
+            const tableBody = document.getElementById('studioVideosTable');
+            tableBody.innerHTML = '';
+
+            const myVideos = videos.filter(v => v.ownerId === userId);
+            document.getElementById('studioTotalVideosCount').innerText = myVideos.length;
+
+            const uploadViewsSum = myVideos.reduce((acc, v) => acc + (v.viewsCount || 0), 0);
+            const finalViewsCalculated = uploadViewsSum + myChannelViewsBonus;
+
+            document.getElementById('studioTotalViewsLabel').innerText = formatViews(finalViewsCalculated);
+            document.getElementById('studioSubscribersLabel').innerText = formatSubscribers(mySubscribers);
+
+            if (myVideos.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center space-y-3 py-6">
+                                <i class="fa-solid fa-clapperboard text-5xl text-gray-300 dark:text-zinc-700 animate-pulse"></i>
+                                <p class="font-bold text-gray-700 dark:text-zinc-200">公開済みの動画はありません</p>
+                                <p class="text-xs text-gray-400 max-w-sm mx-auto">「新規動画を登録」ボタンから、あなたのデバイスにある動画ファイルやリンクを投稿して、活動を開始しましょう！</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            myVideos.forEach(v => {
+                let thumbUrl = v.thumbnail;
+                if (v.isYt && !thumbUrl) {
+                    thumbUrl = `https://img.youtube.com/vi/${v.ytId}/hqdefault.jpg`;
+                }
+
+                let likeRatio = "評価なし";
+                const likes = v.likesCount || 0;
+                const dislikes = v.dislikesCount || 0;
+                const totalRating = likes + dislikes;
+                if (totalRating > 0) {
+                    likeRatio = `${Math.round((likes / totalRating) * 100)}%`;
+                } else if (likes > 0) {
+                    likeRatio = "100%";
+                }
+
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition">
+                        <td class="p-4 flex items-center space-x-3 max-w-sm">
+                            <img src="${thumbUrl}" class="w-20 aspect-video object-cover rounded-lg flex-shrink-0" onerror="this.src='https://placehold.co/100x100/333/fff?text=Thumb'">
+                            <span class="font-semibold text-xs md:text-sm line-clamp-1">${v.title}</span>
+                        </td>
+                        <td class="p-4 text-xs font-semibold">
+                            <span class="px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                                ${v.category}
+                            </span>
+                        </td>
+                        <td class="p-4 text-xs font-bold text-gray-500">${v.views || '0回'}</td>
+                        <td class="p-4 text-xs text-gray-400">${v.publishDate}</td>
+                        <td class="p-4 text-xs text-green-500 font-bold">${likeRatio}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="handleVideoCardClick('${v.id}')" class="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg" title="視聴する">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                                ${v.ownerId === userId ? `
+                                    <button onclick="deleteCustomVideo('${v.id}')" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-950/30 rounded-lg" title="動画を削除">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                ` : '<span class="text-xs text-gray-500">保護</span>'}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function simulateMarketing(type) {
+            if (!userId || !dbUserRef) {
+                showToast("データベースへの接続を待機中です", "fa-triangle-exclamation", true);
+                return;
+            }
+
+            let subsGain = 0;
+            let viewsGain = 0;
+            let feedbackMsg = "";
+
+            if (type === 'short') {
+                subsGain = Math.floor(Math.random() * 80) + 120;
+                viewsGain = Math.floor(Math.random() * 500) + 800;
+                feedbackMsg = `⚡ Shorts動画がおすすめフィードに掲載されました！登録者が +${subsGain}人、再生回数が +${viewsGain}回 増えました！`;
+            } else if (type === 'sns') {
+                subsGain = Math.floor(Math.random() * 200) + 150;
+                viewsGain = Math.floor(Math.random() * 3000) + 4000;
+                feedbackMsg = `🔗 SNSで動画がバズ拡散されました！再生回数が +${formatViews(viewsGain)}、登録者が +${subsGain}人 増えました！`;
+            } else if (type === 'viral') {
+                subsGain = Math.floor(Math.random() * 10000) + 40000;
+                viewsGain = Math.floor(Math.random() * 80000) + 120000;
+                feedbackMsg = `🎉 急上昇動画に選ばれました！爆発的なアクセスにより登録者が +${formatSubscribers(subsGain)}、再生回数が +${formatViews(viewsGain)} 急増しました！`;
+            }
+
+            mySubscribers += subsGain;
+            myChannelViewsBonus += viewsGain;
+
+            const myVideos = videos.filter(v => v.ownerId === userId);
+            if (myVideos.length > 0 && viewsGain > 0) {
+                const viewsPerVideo = Math.floor(viewsGain / myVideos.length);
+                for (const v of myVideos) {
+                    const videoDocRef = doc(getPublicVideosCollection(), v.id);
+                    const newViews = (v.viewsCount || 0) + viewsPerVideo;
+                    try {
+                        await updateDoc(videoDocRef, {
+                            viewsCount: newViews,
+                            views: formatViews(newViews)
+                        });
+                        v.viewsCount = newViews;
+                        v.views = formatViews(newViews);
+                    } catch (e) {
+                        console.error("個別動画の再生数インクリメントに失敗しました:", e);
+                    }
+                }
+            }
+
+            try {
+                await updateDoc(dbUserRef, {
+                    mySubscribers: mySubscribers,
+                    myChannelViewsBonus: myChannelViewsBonus
+                });
+                showToast(feedbackMsg, "fa-fire");
+                refreshActiveView();
+            } catch (err) {
+                console.error("シミュレーション結果の保存に失敗しました:", err);
+                showToast("保存に失敗しました", "fa-triangle-exclamation", true);
+            }
+        }
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('uploadForm').reset();
+            removeSelectedFile();
+        }
+
+        function toggleUploadSourceMode(mode) {
+            currentUploadSourceType = mode;
+            const fileZone = document.getElementById('localFileZone');
+            const urlZone = document.getElementById('linkUrlZone');
+            const presetsContainer = document.getElementById('quickPresetsContainer');
+            const tabFile = document.getElementById('sourceTabFile');
+            const tabLink = document.getElementById('sourceTabLink');
+
+            if (mode === 'file') {
+                fileZone.classList.remove('hidden');
+                urlZone.classList.add('hidden');
+                presetsContainer.classList.add('hidden');
+                document.getElementById('uploadUrl').required = false;
+                
+                tabFile.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-500 text-blue-500 focus:outline-none";
+                tabLink.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-zinc-300 focus:outline-none";
+            } else {
+                fileZone.classList.add('hidden');
+                urlZone.classList.remove('hidden');
+                presetsContainer.classList.remove('hidden');
+                document.getElementById('uploadUrl').required = true;
+                removeSelectedFile();
+                
+                tabFile.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-zinc-300 focus:outline-none";
+                tabLink.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-500 text-blue-500 focus:outline-none";
+            }
+        }
+
+        async function handleVideoFileSelect(file) {
+            if (!file || !file.type.startsWith('video/')) {
+                showToast("無効なファイル形式です。動画を選択してください。", "fa-triangle-exclamation", true);
+                return;
+            }
+
+            currentSelectedFile = file;
+            
+            document.getElementById('selectedFileName').innerText = file.name;
+            document.getElementById('selectedFileSize').innerText = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+            document.getElementById('selectedFileInfo').classList.remove('hidden');
+
+            showToast("動画を解析して自動サムネイルを作成中...");
+            try {
+                const capturedBase64 = await extractVideoFrame(file);
+                generatedThumbnailBase64 = capturedBase64;
+                
+                const previewContainer = document.getElementById('thumbnailPreviewContainer');
+                const previewImg = document.getElementById('liveThumbnailPreview');
+                const sourceLabel = document.getElementById('thumbnailSourceLabel');
+
+                previewImg.src = capturedBase64;
+                previewContainer.classList.remove('hidden');
+                sourceLabel.innerText = "動画の第1秒目から自動キャプチャしました";
+
+                const titleInput = document.getElementById('uploadTitle');
+                if (!titleInput.value.trim()) {
+                    titleInput.value = file.name.replace(/\.[^/.]+$/, "");
+                }
+            } catch (err) {
+                console.error("Frame capture failed:", err);
+                showToast("サムネイルのキャプチャに失敗しましたが、動画は登録可能です");
+            }
+        }
+
+        function removeSelectedFile() {
+            currentSelectedFile = null;
+            generatedThumbnailBase64 = null;
+            document.getElementById('selectedFileInfo').classList.add('hidden');
+            document.getElementById('thumbnailPreviewContainer').classList.add('hidden');
+            document.getElementById('uploadFile').value = '';
+        }
+
+        function extractVideoFrame(fileBlob) {
+            return new Promise((resolve, reject) => {
+                const video = document.getElementById('tempVideoElement');
+                const canvas = document.getElementById('tempCanvasElement');
+                const ctx = canvas.getContext('2d');
+                const objectURL = URL.createObjectURL(fileBlob);
+
+                video.src = objectURL;
+                video.muted = true;
+                video.playsInline = true;
+
+                video.onloadeddata = () => {
+                    video.currentTime = 1.0;
+                };
+
+                video.onseeked = () => {
+                    canvas.width = 320;
+                    canvas.height = 180;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    try {
+                        const base64 = canvas.toDataURL('image/jpeg', 0.85);
+                        URL.revokeObjectURL(objectURL);
+                        resolve(base64);
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+
+                video.onerror = (e) => reject(e);
+            });
+        }
+
+        function extractYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        async function handleUploadSubmit(e) {
+            if (e) e.preventDefault();
+
+            const title = document.getElementById('uploadTitle').value.trim();
+            const category = document.getElementById('uploadCategory').value;
+            const channel = document.getElementById('uploadChannel').value.trim();
+            const customThumb = document.getElementById('uploadThumbnail').value.trim();
+            const desc = document.getElementById('uploadDesc').value.trim();
+
+            if (!title || !desc) {
+                showToast("必須項目をすべて入力してください", "fa-triangle-exclamation", true);
+                return;
+            }
+
+            let finalVidObj = {};
+            const uniqueId = `local-${crypto.randomUUID()}`;
+
+            if (currentUploadSourceType === 'file') {
+                if (!currentSelectedFile) {
+                    showToast("アップロードする動画ファイルを選択してください", "fa-triangle-exclamation", true);
+                    return;
+                }
+
+                showToast("データベースへ保存中...", "fa-clock", false);
+                try {
+                    await saveLocalVideoFile(uniqueId, currentSelectedFile);
+
+                    finalVidObj = {
+                        ytId: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4",
+                        isYt: false,
+                        title: title,
+                        channelName: channel,
+                        channelAvatar: `https://placehold.co/100x100/3b82f6/ffffff?text=${channel.substring(0,2).toUpperCase()}`,
+                        subscribers: "0人",
+                        views: "0回",
+                        viewsCount: 0,
+                        publishDate: "たった今",
+                        category: category,
+                        tags: ["#マイビデオ", `#${category}`, "#ローカル動画"],
+                        likes: "0",
+                        likesCount: 0,
+                        dislikesCount: 0,
+                        thumbnail: customThumb || generatedThumbnailBase64 || 'https://placehold.co/600x400/212121/ffffff?text=Video+Stream',
+                        description: desc,
+                        createdAt: Date.now(),
+                        ownerId: userId
+                    };
+                } catch (dbErr) {
+                    console.error("IndexedDB write failed:", dbErr);
+                    showToast("ブラウザデータベースへの書き込みに失敗しました", "fa-triangle-exclamation", true);
+                    return;
+                }
+
+            } else {
+                const rawUrl = document.getElementById('uploadUrl').value.trim();
+                if (!rawUrl) {
+                    showToast("リンクアドレスを入力してください", "fa-triangle-exclamation", true);
+                    return;
+                }
+
+                let ytId = extractYouTubeId(rawUrl);
+                let isYt = true;
+
+                if (!ytId) {
+                    if (rawUrl.startsWith('http')) {
+                        ytId = rawUrl;
+                        isYt = false;
+                    } else {
+                        ytId = rawUrl;
+                        isYt = true;
+                    }
+                }
+
+                finalVidObj = {
+                    ytId: ytId,
+                    isYt: isYt,
+                    title: title,
+                    channelName: channel,
+                    channelAvatar: `https://placehold.co/100x100/dc2626/ffffff?text=${channel.substring(0,2).toUpperCase()}`,
+                    subscribers: "0人",
+                    views: "0回",
+                    viewsCount: 0,
+                    publishDate: "たった今",
+                    category: category,
+                    tags: ["#新着動画", `#${category}`],
+                    likes: "0",
+                    likesCount: 0,
+                    dislikesCount: 0,
+                    thumbnail: customThumb || (isYt ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/600x400/212121/ffffff?text=Studio+Custom+Video'),
+                    description: desc,
+                    createdAt: Date.now(),
+                    ownerId: userId
+                };
+            }
+
+            try {
+                await setDoc(doc(getPublicVideosCollection(), uniqueId), finalVidObj);
+                closeUploadModal();
+                showToast("新しいビデオを共有保存しました！", "fa-circle-check");
+                showPage('home');
+            } catch (err) {
+                console.error("Failed cloud video upload:", err);
+                showToast("アップロードに失敗しました", "fa-triangle-exclamation", true);
+            }
+        }
+
+        async function deleteCustomVideo(id) {
+            const confirmBox = document.createElement('div');
+            confirmBox.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm";
+            confirmBox.innerHTML = `
+                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-6 rounded-2xl w-full max-w-sm mx-4 space-y-4 shadow-2xl">
+                    <h3 class="font-bold text-lg">動画の削除</h3>
+                    <p class="text-sm text-gray-500">この動画を完全に削除しますか？ローカル動画の場合はデバイス上の保存データも削除されます。</p>
+                    <div class="flex justify-end space-x-3">
+                        <button id="cancelDelBtn" class="px-4 py-2 text-sm font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl">キャンセル</button>
+                        <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-xl">削除する</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('cancelDelBtn').onclick = () => confirmBox.remove();
+            document.getElementById('confirmDeleteBtn').onclick = async () => {
+                confirmBox.remove();
+                try {
+                    await deleteDoc(doc(getPublicVideosCollection(), id));
+                    
+                    if (id.startsWith('local-')) {
+                        await deleteLocalVideoFile(id);
+                    }
+                    showToast("動画をクラウドから削除しました", "fa-trash", true);
+                } catch (err) {
+                    console.error("Delete failed:", err);
+                    showToast("削除権限がないかエラーが発生しました", "fa-triangle-exclamation", true);
+                }
+            };
+        }
+
+        let isShortsLiked = false;
+        function toggleShortsLike() {
+            const icon = document.getElementById('shortsLikeIcon');
+            const count = document.getElementById('shortsLikeCount');
+            isShortsLiked = !isShortsLiked;
+            if (isShortsLiked) {
+                icon.className = "fa-solid fa-thumbs-up text-red-500 scale-125 transition duration-150";
+                count.innerText = "5,213";
+            } else {
+                icon.className = "fa-solid fa-thumbs-up text-white";
+                count.innerText = "5,212";
+            }
+        }
+
+        function togglePlayShorts() {
+            const v = document.getElementById('shortsVideo');
+            const icon = document.getElementById('shortsPlayIcon');
+            if (v.paused) {
+                v.play();
+                icon.className = "fa-solid fa-pause text-4xl bg-black/40 p-5 rounded-full";
+            } else {
+                v.pause();
+                icon.className = "fa-solid fa-play text-4xl bg-black/40 p-5 rounded-full";
+            }
+        }
+
+        // Custom Toast system
+        function showToast(message, iconClass = "fa-circle-check", isWarning = false) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = `fa-solid ${iconClass} text-lg ${isWarning ? 'text-red-500 animate-pulse' : 'text-green-500'}`;
+
+            toast.className = "fixed bottom-6 right-6 glass-panel bg-zinc-900/95 text-white border border-zinc-800 px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-0 opacity-100 transition-all duration-300 z-50";
+            
+            setTimeout(() => {
+                toast.className = "fixed bottom-6 right-6 glass-panel bg-zinc-900/95 text-white border border-zinc-800 px-5 py-3.5 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-24 opacity-0 transition-all duration-300 z-50";
+            }, 3500);
+        }
+
+        function setupTheme() {
+            const themeBtn = document.getElementById('themeToggle');
+            const darkOn = localStorage.getItem('theme_dark') !== 'false';
+            if (darkOn) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            themeBtn.onclick = function() {
+                const isDarkNow = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme_dark', isDarkNow);
+                showToast(isDarkNow ? "ダークモードに切り替えました" : "ライトモードに切り替えました", "fa-sun");
+            }
+        }
+
+        function setupEventListeners() {
+            const toggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            toggle.onclick = function() {
+                sidebar.classList.toggle('hidden');
+            }
+
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearSearch');
+            
+            searchInput.oninput = function() {
+                if (searchInput.value.length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            }
+
+            clearBtn.onclick = function() {
+                searchInput.value = '';
+                clearBtn.classList.add('hidden');
+                executeSearch('');
+            }
+
+            document.getElementById('searchForm').onsubmit = function(e) {
+                e.preventDefault();
+                executeSearch(searchInput.value);
+            }
+
+            // Drag and drop setup for file uploads
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('uploadFile');
+
+            dropZone.onclick = () => fileInput.click();
+
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add('bg-blue-50', 'dark:bg-blue-950/20', 'border-blue-500');
+            };
+
+            dropZone.ondragleave = () => {
+                dropZone.classList.remove('bg-blue-50', 'dark:bg-blue-950/20', 'border-blue-500');
+            };
+
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-blue-50', 'dark:bg-blue-950/20', 'border-blue-500');
+                if (e.dataTransfer.files.length > 0) {
+                    handleVideoFileSelect(e.dataTransfer.files[0]);
+                }
+            };
+
+            fileInput.onchange = (e) => {
+                if (e.target.files.length > 0) {
+                    handleVideoFileSelect(e.target.files[0]);
+                }
+            };
+
+            const uploadUrlInput = document.getElementById('uploadUrl');
+            uploadUrlInput.oninput = function() {
+                updateLivePreview(uploadUrlInput.value.trim());
+            };
+
+            const cmtInp = document.getElementById('commentInputField');
+            const cmtSbt = document.getElementById('submitCommentBtn');
+            cmtInp.oninput = function() {
+                if (cmtInp.value.trim().length > 0) {
+                    cmtSbt.disabled = false;
+                } else {
+                    cmtSbt.disabled = true;
+                }
+            }
+
+            // Bind Form submit action to custom handler
+            document.getElementById('uploadForm').onsubmit = function(e) {
+                e.preventDefault();
+                handleUploadSubmit(e);
+            }
+
+            const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+            voiceSearchBtn.onclick = function() {
+                showToast("音声入力をお待ちしています...", "fa-microphone");
+                setTimeout(() => {
+                    const sampleSearch = ["lofi", "自然", "宇宙", "解説"][Math.floor(Math.random() * 4)];
+                    searchInput.value = sampleSearch;
+                    clearBtn.classList.remove('hidden');
+                    executeSearch(sampleSearch);
+                    showToast(`「${sampleSearch}」と音声認識されました`);
+                }, 1500);
+            }
+        }
+
+        // --- ATTACH LOGIC TO GLOBAL OBJECTS ---
+        window.showPage = showPage;
+        window.filterByCategory = filterByCategory;
+        window.handleVideoCardClick = handleVideoCardClick;
+        window.postComment = postComment;
+        window.clearCommentInput = clearCommentInput;
+        window.toggleDescriptionCollapse = toggleDescriptionCollapse;
+        window.clearHistory = clearHistory;
+        window.handleLike = handleLike;
+        window.handleDislike = handleDislike;
+        window.toggleFavorite = toggleFavorite;
+        window.toggleSubscribe = toggleSubscribe;
+        window.shareVideo = shareVideo;
+        window.showUploadModal = showUploadModal;
+        window.closeUploadModal = closeUploadModal;
+        window.handleUploadSubmit = handleUploadSubmit;
+        window.deleteCustomVideo = deleteCustomVideo;
+        window.toggleShortsLike = toggleShortsLike;
+        window.togglePlayShorts = togglePlayShorts;
+        window.toggleUploadSourceMode = toggleUploadSourceMode;
+        window.removeSelectedFile = removeSelectedFile;
+        window.simulateMarketing = simulateMarketing;
+
+        window.onload = function() {
+            setupTheme();
+            setupEventListeners();
+            authenticate();
+        };
+    </script>
+</body>
+</html>
