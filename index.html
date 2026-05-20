@@ -2465,5 +2465,61 @@ index.html
             authenticate();
         };
     </script>
+    <script>
+  const GAS_URL = 'あなたのウェブアプリURLをここに';
+
+  async function upload() {
+    const title = document.getElementById('title').value;
+    const url = document.getElementById('url').value;
+    const embed = getEmbedUrl(url);
+    
+    if (!embed) {
+      alert("YouTubeのURLが正しくありません。");
+      return;
+    }
+
+    // ボタンを無効化して連打防止
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "投稿中...";
+
+    try {
+      const response = await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors', // CORS対策
+        body: JSON.stringify({ title: title, url: embed })
+      });
+      alert("公開登録されました！");
+      document.getElementById('title').value = '';
+      document.getElementById('url').value = '';
+      loadVideos(); // 即座に再読み込み
+    } catch (e) {
+      console.error(e);
+      alert("通信エラーが発生しました。");
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "公開登録する";
+    }
+  }
+
+  async function loadVideos() {
+    const container = document.getElementById('videoList');
+    try {
+      const res = await fetch(GAS_URL);
+      const data = await res.json();
+      container.innerHTML = data.map(row => `
+        <div class="video-card">
+          <h3>${row[1]}</h3>
+          <iframe src="${row[2]}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `).join('');
+    } catch (e) {
+      console.error("読み込み失敗:", e);
+    }
+  }
+
+  // ページ読み込み時に実行
+  loadVideos();
+</script>
 </body>
 </html>
